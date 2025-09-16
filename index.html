@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mini Anki (Class)</title>
+  <title>Mini Anki — Class</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <h1>Mini Anki — Class</h1>
 
-  <!-- Login -->
+  <!-- Student Login -->
   <section id="login">
-    <h2>Enter Your Code</h2>
-    <p class="help">Format: <code>Mand0001</code> (no password needed)</p>
+    <h2>Enter Your Student Code</h2>
+    <p class="help">Format: <code>Mand####</code> (e.g., Mand0372). No password needed.</p>
     <div class="controls">
       <input id="codeInput" placeholder="Mand0001" />
       <button id="loginBtn">Log In</button>
@@ -20,7 +20,7 @@
     <p id="loginStatus" class="status"></p>
   </section>
 
-  <!-- After login -->
+  <!-- Who am I -->
   <section id="whoami" style="display:none;">
     <div class="who">
       <strong>Logged in as:</strong> <span id="whoCode"></span>
@@ -28,21 +28,51 @@
     </div>
   </section>
 
+  <!-- Study controls -->
+  <section id="studyControls" style="display:none;">
+    <h2>Study Settings</h2>
+    <div class="controls">
+      <label>Deck:
+        <select id="deckSelect">
+          <option value="ALL">All (HSK2 + HSK3)</option>
+          <option value="HSK2">HSK 2</option>
+          <option value="HSK3">HSK 3</option>
+          <option value="FULL">Full (alias of All)</option>
+        </select>
+      </label>
+      <label>Mode:
+        <select id="modeSelect" title="Daily plan">
+          <option value="A" selected>Mode A: 20 new + 50 review (+ practice to 100)</option>
+          <option value="B">Mode B: 20 new + 30 seen (or 50 seen if no new)</option>
+        </select>
+      </label>
+      <button id="refreshBtn" class="secondary">Refresh Due</button>
+    </div>
+    <p class="status" id="quotaStatus"></p>
+  </section>
+
+  <!-- Add Cards (students can add personal cards too) -->
   <section id="add-card" style="display:none;">
     <h2>Add a Card</h2>
-    <input id="front" placeholder="Front text" />
-    <input id="back" placeholder="Back text" />
     <div class="controls">
+      <input id="front" placeholder="Front text (e.g., 中文)" />
+      <input id="back"  placeholder="Back text (e.g., English / pinyin)" />
+      <label>Deck:
+        <select id="addDeck">
+          <option value="HSK2">HSK 2</option>
+          <option value="HSK3">HSK 3</option>
+        </select>
+      </label>
       <button id="addBtn">Add Card</button>
-      <button id="refreshBtn" class="secondary">Refresh Due</button>
     </div>
     <p id="addStatus" class="status"></p>
   </section>
 
+  <!-- Study -->
   <section id="study" style="display:none;">
     <h2>Study</h2>
     <div class="controls">
-      <button id="startBtn">Start Study</button>
+      <button id="startBtn">Start Session</button>
       <button id="showBtn" class="secondary" style="display:none;">Show Answer</button>
     </div>
 
@@ -58,20 +88,22 @@
       </div>
     </div>
 
+    <!-- Ratings -->
     <div id="buttons" class="buttons" style="display:none;">
-      <button class="again" id="btnAgain">Again</button>
-      <button class="hard"  id="btnHard">Hard</button>
-      <button class="good"  id="btnGood">Good</button>
-      <button class="easy"  id="btnEasy">Easy</button>
+      <button class="again" id="btnAgain" title="1 min">Again</button>
+      <button class="hard"  id="btnHard"  title="5 min">Hard</button>
+      <button class="good"  id="btnGood"  title="10 min">Good</button>
+      <button class="easy"  id="btnEasy"  title="Graduate / next day">Easy</button>
     </div>
 
     <p id="status" class="status"></p>
   </section>
 
+  <!-- Import / Export (student personal) -->
   <section id="manage" style="display:none;">
     <h2>Manage</h2>
     <div class="controls">
-      <button id="exportBtn">Export Cards</button>
+      <button id="exportBtn">Export My Cards</button>
       <label class="file">
         Import JSON
         <input type="file" id="importFile" accept="application/json" />
@@ -79,8 +111,64 @@
     </div>
   </section>
 
+  <!-- Teacher Dashboard -->
+  <section id="teacherLogin">
+    <h2>Teacher Login</h2>
+    <p class="help">Enter your teacher code (e.g., <code>WynR29</code>) to view class summaries and publish class decks.</p>
+    <div class="controls">
+      <input id="teacherCodeInput" placeholder="WynR29" />
+      <button id="teacherLoginBtn">Log In as Teacher</button>
+    </div>
+    <p id="teacherLoginStatus" class="status"></p>
+  </section>
+
+  <section id="teacher" style="display:none;">
+    <div class="who">
+      <strong>Teacher session active.</strong>
+      <button id="teacherRefreshBtn" class="secondary small">Refresh</button>
+    </div>
+
+    <!-- Publish shared decks -->
+    <div class="teacher-tools">
+      <h3>Class Decks</h3>
+      <p class="help">Import HSK 2 / 3 JSON and publish as shared decks. Students auto‑sync on login.</p>
+      <div class="controls">
+        <label class="file">Import HSK2 JSON<input type="file" id="hsk2Import" accept="application/json" /></label>
+        <button id="publishHSK2">Publish HSK 2</button>
+      </div>
+      <div class="controls">
+        <label class="file">Import HSK3 JSON<input type="file" id="hsk3Import" accept="application/json" /></label>
+        <button id="publishHSK3">Publish HSK 3</button>
+      </div>
+      <div class="controls">
+        <button id="syncAll" class="secondary">Force Sync for My Device (test)</button>
+      </div>
+    </div>
+
+    <!-- Summary table -->
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Total Cards</th>
+            <th>Due Now</th>
+            <th>Reviews Today</th>
+            <th>Streak</th>
+            <th>Last Review</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody id="teacherTableBody">
+          <tr><td colspan="7" class="muted">No data yet…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
   <footer>
-    <small>Tip: Export regularly for backup. Data is keyed by your class code.</small>
+    <small>Your data is keyed by your code. Export regularly for backup.</small>
   </footer>
 
   <script type="module" src="app.js"></script>
