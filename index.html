@@ -3,1056 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mr. Zhang's Mandarin 12 Flashcard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Spaced Repetition Flashcards</title>
+    
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
         }
-        .card-container {
-            perspective: 1000px;
+        main {
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
         }
-        .card {
+        #flashcard-container {
+            background-color: transparent;
+            width: 100%;
+            height: 250px;
+            perspective: 1000px; /* For 3D effect */
+            margin: 20px 0;
+        }
+        .card-inner {
             position: relative;
-            transform-style: preserve-3d;
+            width: 100%;
+            height: 100%;
             transition: transform 0.6s;
+            transform-style: preserve-3d;
         }
-        .card.is-flipped {
+        #flashcard-container.flipped .card-inner {
             transform: rotateY(180deg);
         }
         .card-face {
             position: absolute;
             width: 100%;
             height: 100%;
+            -webkit-backface-visibility: hidden; /* Safari */
             backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
             display: flex;
-            align-items: center;
             justify-content: center;
-            flex-direction: column;
-            padding: 1rem;
+            align-items: center;
+            font-size: 1.5rem;
+            padding: 20px;
+            box-sizing: border-box;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .card-face-back {
+        #card-back {
             transform: rotateY(180deg);
+            background-color: #e9f5ff;
         }
-        #login-overlay, #deck-selection-overlay, #edit-card-modal, #delete-confirm-modal, #help-modal, #add-card-modal, #settings-modal {
-            z-index: 10;
+        #controls button {
+            padding: 10px 20px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            margin: 5px;
+            transition: background-color 0.2s;
         }
-        /* Spinner for loading state */
-        .loader {
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #3498db;
-            border-radius: 50%;
-            width: 16px;
-            height: 16px;
-            animation: spin 1s linear infinite;
+        #controls button:hover {
+            background-color: #0056b3;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        #rating-controls {
+            margin-top: 15px;
+        }
+        .hidden {
+            display: none !important;
         }
     </style>
 </head>
-<body class="bg-slate-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
-
-    <!-- Login Screen -->
-    <div id="login-overlay" class="absolute inset-0 bg-slate-100 flex items-center justify-center">
-        <div class="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full relative">
-            <h2 class="text-2xl font-bold text-blue-600 mb-2">Student Login</h2>
-            <p class="text-gray-600 mb-6">Please enter your assigned Student ID.</p>
-            <div class="space-y-3">
-                <input id="student-id-input" type="text" placeholder="e.g., Mand7241" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <input id="student-name-input" type="text" placeholder="Your Full Name (first login only)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent hidden">
-                <button id="login-btn" class="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center">
-                    <span id="login-btn-text">Login / Start</span>
-                    <div id="login-spinner" class="loader hidden ml-3"></div>
-                </button>
-            </div>
-            <p id="login-error" class="text-red-500 text-sm mt-2 h-4"></p>
-        </div>
-    </div>
-    
-    <!-- Deck Selection Screen -->
-    <div id="deck-selection-overlay" class="absolute inset-0 bg-slate-100 flex items-center justify-center hidden">
-        <div class="bg-white p-8 rounded-2xl shadow-lg text-center max-w-sm w-full relative">
-            <div id="open-settings-btn" title="Customize daily goals" class="absolute top-4 right-4 text-gray-400 hover:text-blue-500 cursor-pointer">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-            </div>
-            <h2 id="welcome-message" class="text-2xl font-bold text-blue-600 mb-2">Welcome!</h2>
-            <p id="deck-selection-message" class="text-gray-600 mb-6">Please select a deck to begin your session.</p>
-            <div id="deck-buttons" class="space-y-3">
-                <button data-deck="hsk2" class="deck-btn w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition-colors">HSK 2</button>
-                <button data-deck="hsk3" class="deck-btn w-full bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-yellow-600 transition-colors">HSK 3</button>
-                <button data-deck="complete" class="deck-btn w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors">Complete</button>
-            </div>
-             <button id="logout-btn" class="text-sm text-gray-500 hover:text-red-500 font-semibold mt-6">Log Out</button>
-        </div>
-    </div>
-
-    <!-- Main App -->
-    <div id="app-container" class="max-w-2xl w-full mx-auto p-4 md:p-6 bg-white rounded-2xl shadow-lg hidden">
-        <header class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg -m-2">
-             <div class="flex justify-between items-center">
-                <h1 id="deck-title" class="text-3xl font-bold text-blue-600">Flashcard Deck</h1>
-                 <div class="flex items-center space-x-4">
-                    <button id="change-deck-btn" class="text-sm text-gray-500 hover:text-blue-500 font-semibold">Change Deck</button>
-                    <div id="help-icon" title="How ratings work" class="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold cursor-pointer hover:bg-blue-200 hover:text-blue-700 transition-colors text-sm">?</div>
-                </div>
-            </div>
-            <p id="student-id-display" class="text-left text-gray-500 text-sm mt-1"></p>
-            <p id="deck-stats" class="text-center text-gray-500 mt-2">Loading stats...</p>
-            <p id="daily-goals-stats" class="text-center text-gray-600 font-semibold text-sm mt-1"></p>
-            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-                <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
-            </div>
-            <nav class="flex justify-center border-b mt-4">
-                <button id="review-tab-btn" class="px-6 py-2 font-semibold text-blue-600 border-b-2 border-blue-600">Review</button>
-                <button id="edit-tab-btn" class="px-6 py-2 font-semibold text-gray-500">Edit</button>
-                <button id="stats-tab-btn" class="px-6 py-2 font-semibold text-gray-500">Stats</button>
-            </nav>
-        </header>
-
-        <main>
-            <!-- Review Section -->
-            <div id="review-section">
-                <div id="card-area" class="card-container h-64">
-                     <div id="no-cards-message" class="hidden text-center text-gray-500 pt-20">
-                        <p class="font-semibold text-lg">Deck is empty!</p>
-                        <p>Go to the "Edit" tab to add your first card.</p>
-                    </div>
-                    <div id="all-done-message" class="hidden text-center text-gray-500 pt-20">
-                        <p class="font-semibold text-lg">All done for now!</p>
-                        <p>Come back later to review more cards.</p>
-                    </div>
-                    <div id="current-card" class="card w-full h-full rounded-lg shadow-md">
-                        <div class="card-face card-face-front bg-white border-2 border-gray-200 rounded-lg p-4">
-                            <p id="card-front" class="text-xl text-center"></p>
-                        </div>
-                        <div class="card-face card-face-back bg-blue-100 border-2 border-blue-200 rounded-lg p-4">
-                            <p id="card-back" class="text-xl text-center"></p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div id="action-buttons" class="mt-6 flex flex-col items-center">
-                    <button id="show-answer-btn" class="w-full bg-blue-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-600 transition-colors shadow-sm">Show Answer</button>
-                    <button id="practice-mode-btn" class="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-600 transition-colors shadow-sm hidden mt-2">Practice Seen Words</button>
-                    <div id="rating-buttons" class="hidden w-full grid grid-cols-4 gap-3 mt-4">
-                        <button data-rating="again" class="rating-btn bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition-colors shadow-sm">Again</button>
-                        <button data-rating="hard" class="rating-btn bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600 transition-colors shadow-sm">Hard</button>
-                        <button data-rating="good" class="rating-btn bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600 transition-colors shadow-sm">Good</button>
-                        <button data-rating="easy" class="rating-btn bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors shadow-sm">Easy</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Edit Deck Section -->
-            <div id="edit-deck-section" class="hidden">
-                <div class="flex justify-end mb-4">
-                     <button id="open-add-card-modal-btn" class="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors shadow-sm">+ Add New Card</button>
-                </div>
-                <div class="border rounded-lg max-h-80 overflow-y-auto bg-slate-50">
-                    <div id="card-list-container" class="divide-y divide-slate-200">
-                        <!-- Card list will be dynamically populated here -->
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Stats Section -->
-            <div id="stats-section" class="hidden">
-                <div class="bg-slate-50 p-4 rounded-lg space-y-4">
-                    <h3 class="text-xl font-bold text-slate-800 text-center">Deck Statistics</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                        <div class="bg-white p-4 rounded-lg shadow-sm">
-                            <p class="text-2xl font-bold text-blue-600" id="stats-new-cards">0</p>
-                            <p class="text-sm text-slate-500">Words to Learn</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg shadow-sm">
-                            <p class="text-2xl font-bold text-green-600" id="stats-study-time">0s</p>
-                            <p class="text-sm text-slate-500">Avg. Time / Word (3d)</p>
-                        </div>
-                        <div class="bg-white p-4 rounded-lg shadow-sm">
-                            <p class="text-2xl font-bold text-indigo-600" id="stats-deck-ease">0%</p>
-                            <p class="text-sm text-slate-500">Average Ease</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 class="text-lg font-semibold text-slate-700 mt-6 mb-2">Session History</h4>
-                        <div id="session-history-container" class="border rounded-lg max-h-48 overflow-y-auto bg-white divide-y">
-                           <!-- Session history will be populated here -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-    </div>
-
-    <!-- Add Card Modal -->
-    <div id="add-card-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-8 rounded-2xl shadow-lg max-w-lg w-full">
-            <h3 class="text-xl font-bold text-blue-600 mb-4">Add New Card</h3>
-            <form id="add-card-form">
-                <div class="space-y-4">
-                    <div>
-                        <label for="front" class="block text-sm font-medium text-gray-700 mb-1">Front</label>
-                        <textarea id="front" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
-                    </div>
-                    <div>
-                        <label for="back" class="block text-sm font-medium text-gray-700 mb-1">Back</label>
-                        <textarea id="back" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
-                    </div>
-                </div>
-                <p id="add-card-feedback" class="text-green-600 text-center mt-4 h-5"></p>
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button type="button" id="cancel-add-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Close</button>
-                    <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Add Card</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Edit Card Modal -->
-    <div id="edit-card-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-8 rounded-2xl shadow-lg max-w-lg w-full">
-            <h3 class="text-xl font-bold text-blue-600 mb-4">Edit Card</h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="edit-front" class="block text-sm font-medium text-gray-700 mb-1">Front</label>
-                    <textarea id="edit-front" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
-                </div>
-                <div>
-                    <label for="edit-back" class="block text-sm font-medium text-gray-700 mb-1">Back</label>
-                    <textarea id="edit-back" rows="3" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
-                </div>
-            </div>
-            <div class="mt-6 flex justify-end space-x-3">
-                <button id="cancel-edit-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
-                <button id="save-edit-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Save Changes</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Delete Card Confirmation Modal -->
-    <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-8 rounded-2xl shadow-lg max-w-sm w-full text-center">
-            <h3 class="text-xl font-bold text-red-600 mb-4">Are you sure?</h3>
-            <p class="text-gray-600 mb-6">This card will be permanently deleted.</p>
-            <div class="flex justify-center space-x-4">
-                <button id="cancel-delete-btn" class="px-6 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
-                <button id="confirm-delete-btn" class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Delete</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Help Modal -->
-    <div id="help-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-8 rounded-2xl shadow-lg max-w-md w-full mx-4">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-blue-600">How Ratings Work</h3>
-                <button id="close-help-btn" class="text-gray-400 hover:text-gray-800 text-2xl font-bold">&times;</button>
-            </div>
-            <ul class="space-y-4 text-gray-700">
-                <li class="flex items-start"><div class="w-4 h-4 rounded-full bg-red-500 mr-3 mt-1 flex-shrink-0"></div><div><strong>Again:</strong> You didn't know the answer. The card will show up again in about 1 minute.</div></li>
-                <li class="flex items-start"><div class="w-4 h-4 rounded-full bg-orange-500 mr-3 mt-1 flex-shrink-0"></div><div><strong>Hard:</strong> You struggled to remember. The card will come back sooner than "Good".</div></li>
-                <li class="flex items-start"><div class="w-4 h-4 rounded-full bg-yellow-500 mr-3 mt-1 flex-shrink-0"></div><div><strong>Good:</strong> You remembered, but it took some effort. The review interval will increase significantly.</div></li>
-                <li class="flex items-start"><div class="w-4 h-4 rounded-full bg-green-500 mr-3 mt-1 flex-shrink-0"></div><div><strong>Easy:</strong> You knew the answer instantly. The review interval will increase even more, pushing the card far into the future.</div></li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Settings Modal -->
-    <div id="settings-modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center hidden">
-        <div class="bg-white p-8 rounded-2xl shadow-lg max-w-sm w-full">
-            <h3 class="text-xl font-bold text-blue-600 mb-6">Customize Daily Goals</h3>
-            <div class="space-y-4">
-                <div>
-                    <label for="new-cards-goal-input" class="block text-sm font-medium text-gray-700 mb-1">New Cards Per Day</label>
-                    <input id="new-cards-goal-input" type="number" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-                <div>
-                    <label for="reviews-goal-input" class="block text-sm font-medium text-gray-700 mb-1">Reviews Per Day</label>
-                    <input id="reviews-goal-input" type="number" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                </div>
-            </div>
-            <p id="settings-feedback" class="text-red-500 text-center mt-4 h-5"></p>
-            <div class="mt-8 flex justify-end space-x-3">
-                <button id="cancel-settings-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
-                <button id="save-settings-btn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Save Goals</button>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, doc, addDoc, updateDoc, writeBatch, query, getDocs, getDoc, setDoc, deleteDoc, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-        // --- DOM ELEMENTS ---
-        const loginOverlay = document.getElementById('login-overlay');
-        const studentIdInput = document.getElementById('student-id-input');
-        const loginBtn = document.getElementById('login-btn');
-        const loginSpinner = document.getElementById('login-spinner');
-        const loginBtnText = document.getElementById('login-btn-text');
-        const loginError = document.getElementById('login-error');
-        const deckSelectionOverlay = document.getElementById('deck-selection-overlay');
-        const welcomeMessage = document.getElementById('welcome-message');
-        const deckSelectionMessage = document.getElementById('deck-selection-message');
-        const deckButtons = document.getElementById('deck-buttons');
-        const logoutBtn = document.getElementById('logout-btn');
-        const appContainer = document.getElementById('app-container');
-        const studentIdDisplay = document.getElementById('student-id-display');
-        const deckTitle = document.getElementById('deck-title');
-        const changeDeckBtn = document.getElementById('change-deck-btn');
-        const reviewTabBtn = document.getElementById('review-tab-btn');
-        const editTabBtn = document.getElementById('edit-tab-btn');
-        const statsTabBtn = document.getElementById('stats-tab-btn');
-        const reviewSection = document.getElementById('review-section');
-        const editDeckSection = document.getElementById('edit-deck-section');
-        const statsSection = document.getElementById('stats-section');
-        const deckStatsEl = document.getElementById('deck-stats');
-        const dailyGoalsStatsEl = document.getElementById('daily-goals-stats');
-        const currentCardEl = document.getElementById('current-card');
-        const cardFrontEl = document.getElementById('card-front');
-        const cardBackEl = document.getElementById('card-back');
-        const noCardsMessage = document.getElementById('no-cards-message');
-        const allDoneMessage = document.getElementById('all-done-message');
-        const showAnswerBtn = document.getElementById('show-answer-btn');
-        const ratingButtons = document.getElementById('rating-buttons');
-        const addCardForm = document.getElementById('add-card-form');
-        const frontInput = document.getElementById('front');
-        const backInput = document.getElementById('back');
-        const addCardFeedback = document.getElementById('add-card-feedback');
-        const cardListContainer = document.getElementById('card-list-container');
-        // Modals
-        const addCardModal = document.getElementById('add-card-modal');
-        const openAddCardModalBtn = document.getElementById('open-add-card-modal-btn');
-        const cancelAddBtn = document.getElementById('cancel-add-btn');
-        const editCardModal = document.getElementById('edit-card-modal');
-        const editFrontInput = document.getElementById('edit-front');
-        const editBackInput = document.getElementById('edit-back');
-        const cancelEditBtn = document.getElementById('cancel-edit-btn');
-        const saveEditBtn = document.getElementById('save-edit-btn');
-        const deleteConfirmModal = document.getElementById('delete-confirm-modal');
-        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-        const helpModal = document.getElementById('help-modal');
-        const helpIcon = document.getElementById('help-icon');
-        const closeHelpBtn = document.getElementById('close-help-btn');
-        const settingsModal = document.getElementById('settings-modal');
-        const openSettingsBtn = document.getElementById('open-settings-btn');
-        const cancelSettingsBtn = document.getElementById('cancel-settings-btn');
-        const saveSettingsBtn = document.getElementById('save-settings-btn');
-        const newCardsGoalInput = document.getElementById('new-cards-goal-input');
-        const reviewsGoalInput = document.getElementById('reviews-goal-input');
-        const settingsFeedback = document.getElementById('settings-feedback');
-        const practiceModeBtn = document.getElementById('practice-mode-btn');
-        const statsNewCardsEl = document.getElementById('stats-new-cards');
-        const statsStudyTimeEl = document.getElementById('stats-study-time');
-        const statsDeckEaseEl = document.getElementById('stats-deck-ease');
-        const sessionHistoryContainer = document.getElementById('session-history-container');
-        const progressBar = document.getElementById('progress-bar');
+<body>
+    <main>
+        <h1>Spaced Repetition Practice</h1>
+        <div id="status-message">Loading your next card...</div>
         
-        // --- FIREBASE & STATE ---
-        let db, auth;
-        let deck = [];
-        let sessionQueue = [];
-        let sessionRepeatPile = [];
-        let sessionSeenCardIds = new Set();
-        let currentCard = null;
-        let userLoginId = null; 
-        let deckId = null;
-        let unsubscribeFromDeck;
-        let reviewStartTime = null;
-        let dailyStats = { newCardsSeen: 0, reviewsDone: 0 };
-        let cardIdToEditOrDelete = null;
-        let userGoals = { newCards: 25, reviews: 50 };
-        let totalSessionCards = 0;
-        let sessionGraduatedCount = 0;
-        let isPracticeMode = false;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        
-        async function initializeFirebase() {
-             return new Promise((resolve, reject) => {
-                const firebaseConfig = {
-                    apiKey: "AIzaSyCqUrofWGpKtfZiHk5f9m-PTuRDFkhyui4",
-                    authDomain: "mand12-1.firebaseapp.com",
-                    projectId: "mand12-1",
-                    storageBucket: "mand12-1.appspot.com",
-                    messagingSenderId: "1008772331402",
-                    appId: "1:1008772331402:web:3f6526dc22153908e83a73",
-                    measurementId: "G-CJNJB88KLN"
-                };
+        <div id="flashcard-container" class="hidden">
+            <div class="card-inner">
+                <div id="card-front" class="card-face">
+                    </div>
+                <div id="card-back" class="card-face">
+                    </div>
+            </div>
+        </div>
 
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
+        <div id="controls">
+            <button id="show-answer-btn">Show Answer</button>
+            <div id="rating-controls" class="hidden">
+                <p>How well did you remember?</p>
+                <button class="rating-btn" data-quality="5">5 (Perfect)</button>
+                <button class="rating-btn" data-quality="4">4 (Hesitated)</button>
+                <button class="rating-btn" data-quality="3">3 (Difficult)</button>
+                <button class="rating-btn" data-quality="2">2 (Incorrect)</button>
+                <button class="rating-btn" data-quality="1">1 (Barely)</button>
+                <button class="rating-btn" data-quality="0">0 (Forgot)</button>
+            </div>
+        </div>
+    </main>
 
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        resolve();
-                    } else {
-                        await signInAnonymously(auth).catch(err => {
-                             if (err.code === 'auth/configuration-not-found') {
-                                loginError.textContent = "Error: Please enable Anonymous Sign-In in your Firebase project's Authentication settings.";
-                             } else {
-                                console.error("Anonymous sign-in failed:", err);
-                                loginError.textContent = "Connection error.";
-                             }
-                             reject(err);
-                        });
-                    }
-                });
-            });
-        }
-       
-        const startUserSession = async (studentId) => {
-            userLoginId = studentId;
-            sessionStorage.setItem('userLoginId', userLoginId);
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const cardContainer = document.getElementById('flashcard-container');
+            const cardFront = document.getElementById('card-front');
+            const cardBack = document.getElementById('card-back');
+            const showAnswerBtn = document.getElementById('show-answer-btn');
+            const ratingControls = document.getElementById('rating-controls');
+            const statusMessage = document.getElementById('status-message');
 
-            const profileRef = doc(db, `artifacts/${appId}/public/data/students/${userLoginId}/profile/info`);
-            let profileSnap = await getDoc(profileRef);
-            
-            if (!profileSnap.exists()) {
-                 await setDoc(profileRef, { studentId, createdAt: Date.now() });
-                 profileSnap = await getDoc(profileRef);
-            }
-            
-            const profileData = profileSnap.data();
-            
-            if (profileData.customGoals) {
-                userGoals = profileData.customGoals;
-            } else {
-                userGoals = { newCards: 25, reviews: 50 };
-            }
+            let cards = [];
+            let currentCard = null;
 
-            welcomeMessage.textContent = `Welcome, ${studentId}!`;
-            loginOverlay.classList.add('hidden');
-            deckSelectionOverlay.classList.remove('hidden');
-        };
-
-        const handleLogin = async () => {
-            const enteredId = studentIdInput.value.trim();
-            const validIds = getValidStudentIds();
-
-            if (!enteredId) {
-                loginError.textContent = "Please enter your Student ID.";
-                return;
-            }
-            
-            if (!validIds.includes(enteredId)) {
-                loginError.textContent = "Invalid Student ID. Please try again.";
-                return;
-            }
-
-            loginError.textContent = "";
-            loginBtn.disabled = true;
-            loginBtnText.textContent = "Processing...";
-            loginSpinner.classList.remove('hidden');
-
-            try {
-                await startUserSession(enteredId);
-            } catch (error) {
-                console.error("Login failed:", error);
-                loginError.textContent = error.message || "Login failed. Please try again.";
-            } finally {
-                loginBtn.disabled = false;
-                loginBtnText.textContent = "Login / Start";
-                loginSpinner.classList.add('hidden');
-            }
-        };
-
-        const getValidStudentIds = () => {
-            return [
-                'Mand7241', 'Mand3892', 'Mand8814', 'Mand1957', 'Mand6423', 
-                'Mand9305', 'Mand2781', 'Mand5169', 'Mand4920', 'Mand7633', 
-                'Mand1187', 'Mand8245', 'Mand3498', 'Mand6712', 'Mand9056', 
-                'Mand2374', 'Mand5821', 'Mand4609', 'Mand7135', 'Mand1492', 
-                'Mand8523', 'Mand3176', 'Mand6049', 'Mand9921', 'Mand2588', 
-                'Mand5347', 'Mand4190', 'Mand7824', 'Mand1755'
+            // --- Sample Data ---
+            const sampleData = [
+                { id: 1, question: "What is the capital of France?", answer: "Paris" },
+                { id: 2, question: "What is 2 + 2?", answer: "4" },
+                { id: 3, question: "What is the powerhouse of the cell?", answer: "Mitochondria" },
+                { id: 4, question: "Who wrote 'Hamlet'?", answer: "William Shakespeare" }
             ];
-        };
-        
-        const handleLogout = () => {
-            sessionStorage.removeItem('userLoginId');
-            sessionStorage.removeItem('deckId');
-            userLoginId = null; deckId = null; deck = []; currentCard = null;
-            appContainer.classList.add('hidden');
-            deckSelectionOverlay.classList.add('hidden');
-            loginOverlay.classList.remove('hidden');
-            studentIdInput.value = '';
-        };
-        
-        const getTodaysDateString = () => new Date().toISOString().split('T')[0];
 
-        const loadDailyStatsForDeck = async () => {
-            if (!userLoginId || !deckId) return;
-            const statsRef = doc(db, `artifacts/${appId}/public/data/students/${userLoginId}/progress/${deckId}`);
-            const statsSnap = await getDoc(statsRef);
-            const todayStr = getTodaysDateString();
+            // --- Core Functions ---
 
-            if (statsSnap.exists() && statsSnap.data().lastSessionDate === todayStr) {
-                dailyStats = statsSnap.data();
-            } else {
-                dailyStats = { newCardsSeen: 0, reviewsDone: 0, lastSessionDate: todayStr };
-                await setDoc(statsRef, dailyStats);
-            }
-        };
-
-        const updateDailyStatsInFirestore = async () => {
-             if (!userLoginId || !deckId) return;
-             const statsRef = doc(db, `artifacts/${appId}/public/data/students/${userLoginId}/progress/${deckId}`);
-             await setDoc(statsRef, dailyStats, { merge: true });
-        };
-        
-        const startReviewSession = async () => {
-            isPracticeMode = false;
-            await loadDailyStatsForDeck();
-
-            const newCardsLimit = Math.max(0, userGoals.newCards - (dailyStats.newCardsSeen || 0));
-            const reviewCardsLimit = Math.max(0, userGoals.reviews - (dailyStats.reviewsDone || 0));
-            
-            const newCards = deck.filter(c => !c.status || c.status === 'new').slice(0, newCardsLimit);
-            const reviewCards = deck.filter(c => c.status === 'practice' && c.nextReviewDate <= Date.now()).slice(0, reviewCardsLimit);
-
-            sessionQueue = [...newCards, ...reviewCards].sort(() => Math.random() - 0.5);
-            sessionRepeatPile = [];
-            sessionSeenCardIds = new Set();
-            
-            totalSessionCards = sessionQueue.length;
-            sessionGraduatedCount = 0;
-            updateProgressBar();
-            
-            showNextCard();
-        };
-
-        const startPracticeSession = () => {
-            isPracticeMode = true;
-            sessionQueue = deck.filter(c => c.status === 'practice').sort(() => Math.random() - 0.5);
-            sessionRepeatPile = [];
-            sessionSeenCardIds = new Set();
-            totalSessionCards = sessionQueue.length;
-            sessionGraduatedCount = 0;
-
-            deckStatsEl.innerHTML = `<span class="text-purple-600 font-semibold">Practice Mode</span>`;
-            dailyGoalsStatsEl.textContent = "Reviews in this mode do not affect your stats.";
-            updateProgressBar();
-            showNextCard();
-        };
-
-        const handleDeckSelection = async (selectedDeckId) => {
-            deckButtons.querySelectorAll('button').forEach(btn => btn.disabled = true);
-            deckSelectionMessage.textContent = `Loading ${selectedDeckId.toUpperCase()} deck...`;
-            
-            deckId = selectedDeckId;
-            sessionStorage.setItem('deckId', deckId);
-            
-            const deckNames = { hsk2: 'HSK 2', hsk3: 'HSK 3', complete: 'Complete Deck'};
-            deckTitle.textContent = deckNames[selectedDeckId] || 'Flashcard Deck';
-            
-            await loadDeck();
-
-            deckSelectionOverlay.classList.add('hidden');
-            appContainer.classList.remove('hidden');
-            studentIdDisplay.textContent = `Student ID: ${userLoginId}`;
-            
-            deckButtons.querySelectorAll('button').forEach(btn => btn.disabled = false);
-            deckSelectionMessage.textContent = "Please select a deck to begin your session.";
-        };
-
-        const handleChangeDeck = () => {
-            if (unsubscribeFromDeck) unsubscribeFromDeck();
-            deck = []; sessionQueue = []; sessionRepeatPile = []; currentCard = null; deckId = null;
-            sessionStorage.removeItem('deckId');
-            appContainer.classList.add('hidden');
-            deckSelectionOverlay.classList.remove('hidden');
-        };
-
-        const getDeckCollectionPath = (sId = userLoginId, dId = deckId) => `artifacts/${appId}/public/data/students/${sId}/decks/${dId}/cards`;
-        
-        const loadDeck = async () => {
-            if (!userLoginId || !deckId) return;
-            
-            if (unsubscribeFromDeck) unsubscribeFromDeck();
-
-            const deckCollection = collection(db, getDeckCollectionPath());
-            
-            unsubscribeFromDeck = onSnapshot(deckCollection, (snapshot) => {
-                deck = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                switchTab('review');
-            });
-        };
-        
-        const updateStatsUI = () => {
-            if (isPracticeMode) return;
-            const newCountInQueue = sessionQueue.filter(c => (!c.status || c.status === 'new') && !sessionSeenCardIds.has(c.id)).length;
-            const reviewCountInQueue = sessionQueue.filter(c => c.status === 'practice').length;
-            const repeatCount = sessionRepeatPile.length;
-
-            deckStatsEl.innerHTML = `
-                <span class="text-blue-600 font-semibold">New: ${newCountInQueue}</span> | 
-                <span class="text-green-600 font-semibold">Practice: ${reviewCountInQueue}</span> |
-                <span class="text-red-600 font-semibold">Repeating: ${repeatCount}</span>
-            `;
-            dailyGoalsStatsEl.textContent = `Today's Progress — New: ${dailyStats.newCardsSeen}/${userGoals.newCards}, Reviews: ${dailyStats.reviewsDone}/${userGoals.reviews}`;
-        };
-
-        const updateProgressBar = () => {
-            const percentage = totalSessionCards > 0 ? (sessionGraduatedCount / totalSessionCards) * 100 : 0;
-            progressBar.style.width = `${percentage}%`;
-        };
-
-        const showNextCard = () => {
-            currentCardEl.style.transition = 'none';
-            currentCardEl.classList.remove('is-flipped');
-            setTimeout(() => {
-                currentCardEl.style.transition = 'transform 0.6s';
-            }, 50);
-
-            ratingButtons.classList.add('hidden');
-            showAnswerBtn.classList.remove('hidden');
-            practiceModeBtn.classList.add('hidden');
-            reviewStartTime = Date.now();
-            
-            if (sessionQueue.length > 0) {
-                currentCard = sessionQueue.shift(); 
-            } else if (sessionRepeatPile.length > 0) {
-                currentCard = sessionRepeatPile.shift(); 
-            } else {
-                currentCard = null;
-            }
-
-            if (currentCard) {
-                cardFrontEl.textContent = currentCard.front;
-                cardBackEl.textContent = currentCard.back;
-                currentCardEl.classList.remove('hidden');
-                noCardsMessage.classList.add('hidden');
-                allDoneMessage.classList.add('hidden');
-            } else {
-                 if (deck.length === 0) {
-                    noCardsMessage.classList.remove('hidden');
+            function loadCards() {
+                const storedCards = localStorage.getItem('flashcards');
+                if (storedCards) {
+                    cards = JSON.parse(storedCards);
                 } else {
-                    allDoneMessage.innerHTML = `<p class="font-semibold text-lg">All done for this session!</p><p>Great work.</p>`;
-                    allDoneMessage.classList.remove('hidden');
-                    updateProgressBar(); // Set to 100% on finish
-                    if (!isPracticeMode) practiceModeBtn.classList.remove('hidden');
+                    cards = sampleData.map(card => ({
+                        ...card,
+                        interval: 0,
+                        repetitions: 0,
+                        efactor: 2.5,
+                        dueDate: new Date().toISOString()
+                    }));
+                    saveCards();
                 }
-                currentCardEl.classList.add('hidden');
+                findNextCard();
+            }
+
+            function saveCards() {
+                localStorage.setItem('flashcards', JSON.stringify(cards));
+            }
+
+            function findNextCard() {
+                const now = new Date();
+                const dueCards = cards.filter(card => new Date(card.dueDate) <= now);
+                
+                if (dueCards.length > 0) {
+                    currentCard = dueCards.reduce((a, b) => new Date(a.dueDate) < new Date(b.dueDate) ? a : b);
+                    displayCard();
+                } else {
+                    statusMessage.textContent = "🎉 You're all done for now! Come back later.";
+                    cardContainer.classList.add('hidden');
+                    showAnswerBtn.classList.add('hidden');
+                }
+            }
+
+            function displayCard() {
+                cardContainer.classList.remove('flipped', 'hidden');
+                showAnswerBtn.classList.remove('hidden');
+                ratingControls.classList.add('hidden');
+                statusMessage.textContent = '';
+                cardFront.textContent = currentCard.question;
+                cardBack.textContent = currentCard.answer;
+            }
+
+            function reviewCard(quality) {
+                if (!currentCard) return;
+
+                if (quality < 3) {
+                    currentCard.repetitions = 0;
+                    currentCard.interval = 1;
+                } else {
+                    currentCard.efactor = Math.max(1.3, currentCard.efactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
+                    currentCard.repetitions += 1;
+                    if (currentCard.repetitions === 1) {
+                        currentCard.interval = 1;
+                    } else if (currentCard.repetitions === 2) {
+                        currentCard.interval = 6;
+                    } else {
+                        currentCard.interval = Math.ceil(currentCard.interval * currentCard.efactor);
+                    }
+                }
+                
+                const now = new Date();
+                now.setDate(now.getDate() + currentCard.interval);
+                currentCard.dueDate = now.toISOString();
+
+                const cardIndex = cards.findIndex(card => card.id === currentCard.id);
+                if (cardIndex > -1) {
+                    cards[cardIndex] = currentCard;
+                }
+
+                saveCards();
+                findNextCard();
+            }
+
+            // --- Event Listeners ---
+            showAnswerBtn.addEventListener('click', () => {
+                cardContainer.classList.add('flipped');
                 showAnswerBtn.classList.add('hidden');
-            }
-            updateStatsUI();
-        };
-
-        const handleShowAnswer = () => {
-            currentCardEl.classList.add('is-flipped');
-            showAnswerBtn.classList.add('hidden');
-            ratingButtons.classList.remove('hidden');
-        };
-
-        const handleRating = async (e) => {
-            if (!currentCard) return;
-            const rating = e.target.dataset.rating;
-            ratingButtons.querySelectorAll('button').forEach(btn => btn.disabled = true);
-
-            try {
-                 if (isPracticeMode) {
-                    if (rating !== 'again' && rating !== 'hard') {
-                        sessionGraduatedCount++;
-                        updateProgressBar();
-                    } else {
-                        sessionRepeatPile.push(currentCard);
-                    }
-                    return;
-                }
-
-                const reviewSpeed = Date.now() - reviewStartTime;
-                
-                const wasCorrect = rating !== 'again';
-                const isNewCard = !currentCard.status || currentCard.status === 'new';
-                const cardId = currentCard.id;
-                const hasBeenSeenThisSession = sessionSeenCardIds.has(cardId);
-                let easeFactor = currentCard.easeFactor || 2.5;
-
-                const reviewHistoryRef = collection(db, `artifacts/${appId}/public/data/students/${userLoginId}/reviewHistory`);
-                await addDoc(reviewHistoryRef, { cardId: currentCard.id, deckId, timestamp: Date.now(), speed: reviewSpeed, correct: wasCorrect, isNew: isNewCard });
-
-                if (!hasBeenSeenThisSession) {
-                    if (isNewCard) {
-                        dailyStats.newCardsSeen++;
-                    } else {
-                        dailyStats.reviewsDone++;
-                    }
-                    await updateDailyStatsInFirestore();
-                    sessionSeenCardIds.add(cardId);
-                }
-                
-                const updates = {};
-                updates.status = 'practice';
-
-                if (rating === 'again' || rating === 'hard') {
-                    const cardForRepeat = { ...currentCard, status: 'practice' };
-                    sessionRepeatPile.push(cardForRepeat);
-                    
-                    if (rating === 'again') easeFactor = Math.max(1.3, easeFactor - 0.2);
-                    if (rating === 'hard') easeFactor = Math.max(1.3, easeFactor - 0.15);
-                    updates.easeFactor = easeFactor;
-
-                    if (isNewCard) {
-                         const cardRef = doc(db, getDeckCollectionPath(), cardId);
-                         await updateDoc(cardRef, updates);
-                    }
-                } else {
-                    sessionGraduatedCount++;
-                    updateProgressBar();
-                    const now = new Date();
-                    let nextInterval;
-                    const currentInterval = currentCard.interval || 1;
-
-                    if (rating === 'good') {
-                        nextInterval = isNewCard ? 1 * 24 * 60 : currentInterval * easeFactor; 
-                    } else { // easy
-                        easeFactor += 0.15;
-                        nextInterval = isNewCard ? 4 * 24 * 60 : currentInterval * easeFactor * 1.3;
-                    }
-                    updates.interval = Math.ceil(nextInterval);
-                    updates.nextReviewDate = now.getTime() + updates.interval * 60 * 1000;
-                    updates.easeFactor = easeFactor;
-                    
-                    const cardRef = doc(db, getDeckCollectionPath(), cardId);
-                    await updateDoc(cardRef, updates);
-                }
-            } catch (error) {
-                console.error("Error processing rating:", error);
-            } finally {
-                showNextCard();
-                ratingButtons.querySelectorAll('button').forEach(btn => btn.disabled = false);
-            }
-        };
-            
-        const handleAddCard = async (e) => {
-            e.preventDefault();
-            const addBtn = e.target.querySelector('button[type="submit"]');
-            addBtn.disabled = true;
-
-            const front = frontInput.value.trim(); const back = backInput.value.trim();
-            if (!front || !back) {
-                addBtn.disabled = false;
-                return;
-            }
-            const newCard = { front, back, nextReviewDate: Date.now(), interval: 1, status: 'new', easeFactor: 2.5 };
-            
-            try {
-                await addDoc(collection(db, getDeckCollectionPath()), newCard);
-                
-                const hskDecks = ['hsk2', 'hsk3'];
-                if (hskDecks.includes(deckId)) {
-                    const completeDeckCollection = collection(db, getDeckCollectionPath(userLoginId, 'complete'));
-                    await addDoc(completeDeckCollection, newCard);
-                }
-
-                frontInput.value = ''; backInput.value = ''; frontInput.focus();
-                addCardFeedback.textContent = 'Card added successfully!';
-                addCardFeedback.classList.add('text-green-600'); addCardFeedback.classList.remove('text-red-600');
-                setTimeout(() => { addCardFeedback.textContent = ''; }, 2000);
-            } catch (error) {
-                console.error("Error adding card:", error);
-                addCardFeedback.textContent = 'Error adding card.';
-                addCardFeedback.classList.remove('text-green-600'); addCardFeedback.classList.add('text-red-600');
-                setTimeout(() => { addCardFeedback.textContent = ''; }, 2000);
-            } finally {
-                addBtn.disabled = false;
-            }
-        };
-        
-        // --- EDIT DECK FUNCTIONS ---
-        const populateCardList = () => {
-            cardListContainer.innerHTML = '';
-            if (deck.length === 0) {
-                cardListContainer.innerHTML = '<p class="p-4 text-center text-gray-500">This deck is empty.</p>';
-                return;
-            }
-            deck.forEach(card => {
-                const cardEl = document.createElement('div');
-                cardEl.className = 'p-4 flex justify-between items-center';
-                cardEl.innerHTML = `
-                    <div class="flex-1 mr-4 overflow-hidden">
-                        <p class="font-medium text-gray-800 truncate">${card.front}</p>
-                        <p class="text-sm text-gray-500 truncate">${card.back}</p>
-                    </div>
-                    <div>
-                        <button data-id="${card.id}" class="edit-card-btn text-blue-500 hover:text-blue-700 mr-3 font-semibold">Edit</button>
-                        <button data-id="${card.id}" class="delete-card-btn text-red-500 hover:text-red-700 font-semibold">Delete</button>
-                    </div>
-                `;
-                cardListContainer.appendChild(cardEl);
-            });
-        };
-        
-        const openEditModal = (cardId) => {
-            const card = deck.find(c => c.id === cardId);
-            if (!card) return;
-            cardIdToEditOrDelete = cardId;
-            editFrontInput.value = card.front;
-            editBackInput.value = card.back;
-            editCardModal.classList.remove('hidden');
-        };
-        
-        const closeEditModal = () => {
-            cardIdToEditOrDelete = null;
-            editCardModal.classList.add('hidden');
-        };
-
-        const handleSaveChanges = async () => {
-            saveEditBtn.disabled = true;
-            const newFront = editFrontInput.value.trim();
-            const newBack = editBackInput.value.trim();
-
-            if (!cardIdToEditOrDelete || !newFront || !newBack) {
-                saveEditBtn.disabled = false;
-                return;
-            };
-
-            const cardRef = doc(db, getDeckCollectionPath(), cardIdToEditOrDelete);
-            try {
-                await updateDoc(cardRef, { front: newFront, back: newBack });
-                closeEditModal();
-            } catch (error) {
-                console.error("Error updating card:", error);
-            } finally {
-                saveEditBtn.disabled = false;
-            }
-        };
-        
-        const openDeleteConfirm = (cardId) => {
-            cardIdToEditOrDelete = cardId;
-            deleteConfirmModal.classList.remove('hidden');
-        };
-
-        const closeDeleteConfirm = () => {
-            cardIdToEditOrDelete = null;
-            deleteConfirmModal.classList.add('hidden');
-        };
-
-        const handleDeleteCard = async () => {
-            if (!cardIdToEditOrDelete) return;
-            confirmDeleteBtn.disabled = true;
-            const cardRef = doc(db, getDeckCollectionPath(), cardIdToEditOrDelete);
-            try {
-                await deleteDoc(cardRef);
-                closeDeleteConfirm();
-            } catch (error) {
-                console.error("Error deleting card:", error);
-            } finally {
-                confirmDeleteBtn.disabled = false;
-            }
-        };
-            
-        const switchTab = (tab) => {
-            const tabs = {
-                review: { section: reviewSection, btn: reviewTabBtn },
-                edit: { section: editDeckSection, btn: editTabBtn },
-                stats: { section: statsSection, btn: statsTabBtn },
-            };
-
-            Object.values(tabs).forEach(({ section, btn }) => {
-                section.classList.add('hidden');
-                btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
-                btn.classList.add('text-gray-500');
+                ratingControls.classList.remove('hidden');
             });
 
-            tabs[tab].section.classList.remove('hidden');
-            tabs[tab].btn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
-
-            if (tab === 'review') {
-                startReviewSession();
-            }
-            else if (tab === 'edit') {
-                 populateCardList();
-            } else if (tab === 'stats') {
-                showStudentStats();
-            }
-        };
-        
-        const showStudentStats = async () => {
-            const statsNewCardsEl = document.getElementById('stats-new-cards');
-            const statsStudyTimeEl = document.getElementById('stats-study-time');
-            const statsDeckEaseEl = document.getElementById('stats-deck-ease');
-            const sessionHistoryContainer = document.getElementById('session-history-container');
-            statsNewCardsEl.textContent = '...';
-            statsStudyTimeEl.textContent = '...';
-            statsDeckEaseEl.textContent = '...';
-            sessionHistoryContainer.innerHTML = '<p class="p-4 text-center text-gray-500">Loading history...</p>';
-
-            const wordsToLearn = deck.filter(c => !c.status || c.status === 'new').length;
-            statsNewCardsEl.textContent = wordsToLearn;
-            
-            const historyRef = collection(db, `artifacts/${appId}/public/data/students/${userLoginId}/reviewHistory`);
-            const q = query(historyRef, where("deckId", "==", deckId));
-            const historySnapshot = await getDocs(q);
-            const reviews = historySnapshot.docs.map(doc => doc.data());
-
-            const threeDaysAgo = Date.now() - (3 * 24 * 60 * 60 * 1000);
-            const recentReviews = reviews.filter(r => r.timestamp >= threeDaysAgo);
-
-            if (recentReviews.length > 0) {
-                const totalTimeMs = recentReviews.reduce((sum, r) => sum + (r.speed || 0), 0);
-                const avgTimePerWord = (totalTimeMs / recentReviews.length / 1000).toFixed(1);
-                statsStudyTimeEl.textContent = `${avgTimePerWord}s`;
-            } else {
-                statsStudyTimeEl.textContent = 'N/A';
-            }
-
-            const seenCards = deck.filter(c => c.status === 'practice' && c.easeFactor);
-            if (seenCards.length > 0) {
-                const totalEase = seenCards.reduce((sum, c) => sum + c.easeFactor, 0);
-                statsDeckEaseEl.textContent = `${Math.round((totalEase / seenCards.length) * 100)}%`;
-            } else {
-                statsDeckEaseEl.textContent = 'N/A';
-            }
-
-            const sessions = reviews.reduce((acc, r) => {
-                const date = new Date(r.timestamp).toLocaleDateString();
-                if (!acc[date]) {
-                    acc[date] = 0;
+            ratingControls.addEventListener('click', (event) => {
+                if (event.target.classList.contains('rating-btn')) {
+                    const quality = parseInt(event.target.getAttribute('data-quality'), 10);
+                    reviewCard(quality);
                 }
-                acc[date]++;
-                return acc;
-            }, {});
+            });
 
-            sessionHistoryContainer.innerHTML = '';
-            if (Object.keys(sessions).length === 0) {
-                 sessionHistoryContainer.innerHTML = '<p class="p-4 text-center text-gray-500">No review history for this deck yet.</p>';
-            } else {
-                for (const [date, count] of Object.entries(sessions)) {
-                    const sessionEl = document.createElement('div');
-                    sessionEl.className = 'p-3 flex justify-between items-center';
-                    sessionEl.innerHTML = `
-                        <p class="font-medium text-gray-700">${date}</p>
-                        <p class="text-gray-500">${count} reviews</p>
-                    `;
-                    sessionHistoryContainer.appendChild(sessionEl);
-                }
-            }
-        };
-        
-        // --- SETTINGS FUNCTIONS ---
-        const openSettingsModal = () => {
-            newCardsGoalInput.value = userGoals.newCards;
-            reviewsGoalInput.value = userGoals.reviews;
-            settingsModal.classList.remove('hidden');
-        };
-
-        const closeSettingsModal = () => {
-            settingsFeedback.textContent = '';
-            settingsModal.classList.add('hidden');
-        };
-
-        const handleSaveSettings = async () => {
-            saveSettingsBtn.disabled = true;
-            const newCards = parseInt(newCardsGoalInput.value, 10);
-            const newReviews = parseInt(reviewsGoalInput.value, 10);
-
-            if (isNaN(newCards) || isNaN(newReviews) || newCards < 0 || newReviews < 0) {
-                settingsFeedback.textContent = 'Please enter valid numbers.';
-                saveSettingsBtn.disabled = false;
-                return;
-            }
-
-            userGoals = { newCards, reviews: newReviews };
-            
-            const profileRef = doc(db, `artifacts/${appId}/public/data/students/${userLoginId}/profile/info`);
-            try {
-                await setDoc(profileRef, { customGoals: userGoals }, { merge: true });
-                updateStatsUI();
-                closeSettingsModal();
-            } catch (error) {
-                console.error("Error saving settings:", error);
-                settingsFeedback.textContent = 'Could not save settings.';
-            } finally {
-                saveSettingsBtn.disabled = false;
-            }
-        };
-
-        // --- EVENT LISTENERS ---
-        loginBtn.addEventListener('click', handleLogin);
-        logoutBtn.addEventListener('click', handleLogout);
-        deckButtons.addEventListener('click', (e) => {
-            if (e.target.classList.contains('deck-btn')) handleDeckSelection(e.target.dataset.deck);
+            // --- Initial Load ---
+            loadCards();
         });
-        changeDeckBtn.addEventListener('click', handleChangeDeck);
-        reviewTabBtn.addEventListener('click', () => switchTab('review'));
-        editTabBtn.addEventListener('click', () => switchTab('edit'));
-        statsTabBtn.addEventListener('click', () => switchTab('stats'));
-        showAnswerBtn.addEventListener('click', handleShowAnswer);
-        ratingButtons.addEventListener('click', (e) => {
-            if (e.target.classList.contains('rating-btn')) handleRating(e);
-        });
-        addCardForm.addEventListener('submit', handleAddCard);
-        
-        // Add Card Modal Listeners
-        openAddCardModalBtn.addEventListener('click', () => addCardModal.classList.remove('hidden'));
-        cancelAddBtn.addEventListener('click', () => addCardModal.classList.add('hidden'));
-
-        // Edit/Delete Listeners
-        cardListContainer.addEventListener('click', (e) => {
-            const target = e.target;
-            if(target.classList.contains('edit-card-btn')) {
-                openEditModal(target.dataset.id);
-            } else if (target.classList.contains('delete-card-btn')) {
-                openDeleteConfirm(target.dataset.id);
-            }
-        });
-        cancelEditBtn.addEventListener('click', closeEditModal);
-        saveEditBtn.addEventListener('click', handleSaveChanges);
-        cancelDeleteBtn.addEventListener('click', closeDeleteConfirm);
-        confirmDeleteBtn.addEventListener('click', handleDeleteCard);
-        
-        // Help Modal Listeners
-        helpIcon.addEventListener('click', () => helpModal.classList.remove('hidden'));
-        closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
-        helpModal.addEventListener('click', (e) => {
-            if (e.target === helpModal) helpModal.classList.add('hidden');
-        });
-
-        // Settings Modal Listeners
-        openSettingsBtn.addEventListener('click', openSettingsModal);
-        cancelSettingsBtn.addEventListener('click', closeSettingsModal);
-        saveSettingsBtn.addEventListener('click', handleSaveSettings);
-
-        practiceModeBtn.addEventListener('click', startPracticeSession);
-        
-        window.addEventListener('beforeunload', () => {
-            if (userLoginId && deckId && (sessionQueue.length > 0 || sessionRepeatPile.length > 0)) {
-                const sessionState = {
-                    queue: sessionQueue,
-                    repeat: sessionRepeatPile,
-                    seen: Array.from(sessionSeenCardIds),
-                    graduated: sessionGraduatedCount,
-                    total: totalSessionCards,
-                    date: getTodaysDateString()
-                };
-                sessionStorage.setItem(`session-${userLoginId}-${deckId}`, JSON.stringify(sessionState));
-            }
-        });
-
-        // --- INITIALIZATION ---
-        (async () => {
-            loginBtn.disabled = true;
-            loginBtnText.textContent = "Connecting...";
-            loginSpinner.classList.remove('hidden');
-            await initializeFirebase();
-            loginBtn.disabled = false;
-            loginBtnText.textContent = "Login / Start";
-            loginSpinner.classList.add('hidden');
-        })();
     </script>
 </body>
 </html>
-
