@@ -1,4 +1,51 @@
-const supabase = supabase.createClient(
-  'https://wtohgthingnwhjsawtqo.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind0b2hndGhpbmdud2hqc2F3dHFvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgwNTIxNjUsImV4cCI6MjA3MzYyODE2NX0.JFQJzBi8_LTSiM2upqZHutIIMOWbhiu_gfGvmjsJ3VU'
-);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Anki Clone</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="login-container">
+        <h1>Student Login</h1>
+        <form id="login-form">
+            <input type="text" id="student-id-input" placeholder="Enter ID (e.g., Mand1234)" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <div class="header">
+            <span id="logged-in-student"></span>
+            <button id="logout-btn">Logout</button>
+        </div>
+        <h1>Anki Clone</h1>
+
+        <div id="card-container" class="card">
+            <div id="card-content">Loading cards...</div>
+        </div>
+
+        <div id="controls">
+            <button id="show-answer-btn">Show Answer</button>
+            <div id="rating-buttons" class="hidden">
+                <button class="rating-btn" data-quality="1">Again</button>
+                <button class="rating-btn" data-quality="4">Good</button>
+                <button class="rating-btn" data-quality="5">Easy</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <h2>Add a New Card</h2>
+        <form id="add-card-form">
+            <input type="text" id="new-question" placeholder="Question" required>
+            <input type="text" id="new-answer" placeholder="Answer" required>
+            <button type="submit">Add Card</button>
+        </form>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="script.js"></script>
+</body>
+</html>
