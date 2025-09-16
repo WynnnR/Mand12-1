@@ -49,9 +49,11 @@ function setQuotaStatus(){
   const d = state.daily;
   el('quotaStatus').textContent = `New left: ${20 - d.newUsed} · Reviews left: ${50 - d.reviewUsed} · Done: ${d.interactions}/100`;
 }
-function updateProgressBar(){
+function updateProgressBar() {
   const bar = el('progressBar');
- .min(100, Math.round((state.daily.interactions / 100) * 100));
+  if (!bar) return;
+  // Mode A target is 100 interactions
+  const pct = Math.min(100, Math.round((state.daily.interactions / state.caps.targetInteractions) * 100));
   bar.style.width = pct + '%';
 }
 

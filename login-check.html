@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Firebase Login Check</title></head>
+<body>
+<h1>Firebase Anonymous Login Check</h1>
+<pre id="out">Running…</pre>
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js';
+  import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js';
+  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js';
+
+  // Your config (from earlier)
+  const firebaseConfig = {
+    apiKey: "AIzaSyC4NvDxQaDhurYH38sJ_REHj8agjl185zA",
+    authDomain: "mand12-f3515.firebaseapp.com",
+    projectId: "mand12-f3515",
+    storageBucket: "mand12-f3515.firebasestorage.app",
+    messagingSenderId: "142720341393",
+    appId: "1:142720341393:web:fd8ffdc26052fdc049b630",
+    measurementId: "G-LWD3M5CLDY"
+  };
+
+  const out = document.getElementById('out');
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  try {
+    await signInAnonymously(auth);
+    out.textContent = 'Signed in as UID: ' + (auth.currentUser?.uid || 'UNKNOWN');
+
+    // Optional: probe one of your student codes (change to a real one you created)
+    const codeToCheck = 'Mand0372';
+    const snap = await getDoc(doc(db, 'codes', codeToCheck));
+    out.textContent += '\n/codes/' + codeToCheck + ' exists? ' + snap.exists();
+  } catch (e) {
+    out.textContent = 'Failed: ' + (e?.code || e?.message || e);
+    console.error(e);
+  }
+</script>
+</body>
+</html>
