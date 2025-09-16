@@ -132,24 +132,6 @@ button.small { padding: 6px 10px; font-size: 13px; }
 .buttons .good  { background: var(--good); }
 .buttons .easy  { background: var(--easy); }
 
-/* Progress */
-.progress {
-  width: 100%;
-  max-width: 560px;
-  height: 12px;
-  border-radius: 999px;
-  background: #eef2ff;
-  border: 1px solid #dbeafe;
-  margin: 0 auto 12px;
-  overflow: hidden;
-}
-.progress-bar {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #60a5fa, #34d399);
-  transition: width .3s ease;
-}
-
 .status { text-align: center; color: var(--muted); margin-top: 8px; }
 .help { text-align: center; color: var(--muted); margin-top: -8px; }
 
